@@ -17,4 +17,25 @@ vData.master <- read.csv(file="Input/Training Set/PPD_Training_Master_GBK_3_1_Tr
 vData.UserInfoEx <- read.csv(file="Input/Training Set/PPD_Userupdate_Info_3_1_Training_Set.csv")
 
 head(vData.logInfo)
+head(vData.master)
 head(vData.UserInfoEx)
+names(vData.logInfo)
+names(vData.master)
+names(vData.UserInfoEx)
+
+sort(table(vData.master[,1])[1:30],decreasing=FALSE)[1:10]
+
+table(vData.master[,39])
+for(i in 211:230){
+  print(i)
+  print(names(table(vData.master[,i])[1:10]))
+}
+
+vData.master[,228]
+
+write.csv(vData.master,file="Output/test.csv",fileEncoding="UTF-8")
+enc2utf8(vData.master[,1])
+str(vData.master)
+
+
+table(vData.master[,"target"])
