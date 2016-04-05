@@ -10,12 +10,12 @@
 ###
 
 ### Load libraries
-library(RMySQL)
-library(plyr)
-library(ROCR)
 library(woe)
-library(ineq)
-library(pROC)
+# library(RMySQL)
+# library(plyr)
+# library(ROCR)
+# library(ineq)
+# library(pROC)
 
 ### ftopk
 # function to pick top 3 reasons
