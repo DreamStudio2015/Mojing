@@ -47,11 +47,13 @@ ptime <- Sys.time()
 mojing.rf <- randomForest(target ~ ., data=vData.master.ex.training,mtry=8,na.action=na.omit,
                           importance=TRUE)
 difftime(Sys.time(),ptime)
-save(mojing.rf,file="Output/mojing.res2.RData")
+save(mojing.rf,file="Output/mojing.res5.RData")
 
-#save(mojing.rf,file="Output/mojing.res1.RData")
-# 1.68554 hours
-#save(mojing.rf,file="Output/mojing.res.RData")
+#save(mojing.rf,file="Output/mojing.res4.RData") #69.5  32min
+#save(mojing.rf,file="Output/mojing.res3.RData") #71.3  29min
+#save(mojing.rf,file="Output/mojing.res2.RData") #68.9  21min
+#save(mojing.rf,file="Output/mojing.res1.RData") #100  #25 min
+#save(mojing.rf,file="Output/mojing.res.RData") #50  #1.68554 hours
 
 class(vData.master.ex[,"target"])
 str(mojing.rf)
