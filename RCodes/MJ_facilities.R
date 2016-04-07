@@ -10,12 +10,13 @@
 ###
 
 ### Load libraries
+library(randomForest)
 library(woe)
+library(pROC)
 # library(RMySQL)
 # library(plyr)
 # library(ROCR)
 # library(ineq)
-# library(pROC)
 
 ### ftopk
 # function to pick top 3 reasons

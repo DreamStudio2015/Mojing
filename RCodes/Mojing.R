@@ -12,124 +12,95 @@
 ### Configuration ----
 source("RCodes/MJ_facilities.R")
 
-### Load Training Data ----
-vData.logInfo <- read.csv(file="Input/Training Set/PPD_LogInfo_3_1_Training_Set.csv")
-vData.master <- read.csv(file="Input/Training Set/PPD_Training_Master_GBK_3_1_Training_Set.csv")
-vData.UserInfoEx <- read.csv(file="Input/Training Set/PPD_Userupdate_Info_3_1_Training_Set.csv")
-#save(vData.master,vData.logInfo,vData.UserInfoEx,file="RData/vData.origin.RData")
+### Load Data ----
 load(file="RData/vData.origin.RData")
+load(file="RData/vTData.origin.RData")
 
-### Stat for Na data ----
-num.na <- c(id=0,n=0,ratio=0)
-for(i in 2:M){
-  n <- length(vData.master[is.na(vData.master[,i]),i])
-  ratio <- signif(n/N,10)
-  num.na <- rbind(num.na,c(id=i,n,ratio))
-}
-num.na <- num.na[-1,]
-head(num.na)
-num.na[num.na[,"ratio"]>0.06,]
-names(vData.master[1,])[c(6,8,30,31,32)]
+### Public Info ----
+M <- 228
+N <- 30000
 
-head(num.na)
-num.na[num.na[,"n"]>0,]
+### Data Process ----
+source("RCodes/MJ_dataProcess.R")
 
-### Clean the data
-vData.master.ex <- as.data.frame(vData.master[,-c(6,8,30,31,32)])
-colId.na <- num.na[num.na[,"n"]>0&num.na[,"ratio"]<=0.06,"id"]
-rowId.com <- complete.cases(vData.master.ex[,colId.na])
-vData.master.ex <- vData.master.ex[rowId.com,]
+#vData.master.ex.1 <- vData.master.ex[vData.master.ex[,"target"]==1,]
+# name.tmp <- names(vData.master.ex.1)[sapply(vData.master.ex.1, class)=="factor"]
+# for(i in name.tmp){
+#   print(table(vData.master.ex.1[,i]))
+# }
 
-for(i in 2:M){
-  n <- length(vData.master[is.na(vData.master[,i]),i])
-  ratio <- signif(n/N,10)
-  num.na <- rbind(num.na,c(id=i,n,ratio))
-}
+stat.target <- table(vData.master.ex[,"target"])
+vData.master.ex.1<- vData.master.ex[vData.master.ex[,"target"]==1,]
+vData.master.ex.0 <- vData.master.ex[vData.master.ex[,"target"]==0,]
+ind.1 <- sample(2,stat.target["1"],replace=TRUE,prob=c(0.75,0.25))
+ind.0 <- sample(2,stat.target["0"],replace=TRUE,prob=c(0.75,0.25))
 
-for(i in names(vData.master.ex[1,])){
-  n <- length(vData.master.ex[is.na(vData.master.ex[,i]),i])
-  if(n>0)print(c(n,i))
-}
-vData.master.ex[is.na(vData.master.ex[,"WeblogInfo_2"]),"WeblogInfo_2"]
+vData.master.ex.training <- rbind(vData.master.ex.1[ind.1==1,],vData.master.ex.0[ind.0==1,])
+vData.master.ex.test <- rbind(vData.master.ex.1[ind.1==2,],vData.master.ex.0[ind.0==2,])
 
-length(vData.master.ex[,1])
+### Classification of RandomForest ----
+rm(vData.master,vData.logInfo,vData.UserInfoEx,
+   vTData.master,vTData.logInfo,vTData.UserInfoEx)
+#subset.rf <- which(vData.master.ex[,"target"]==1)
+set.seed(71)
+ptime <- Sys.time()
+mojing.rf <- randomForest(target ~ ., data=vData.master.ex.training,mtry=8,na.action=na.omit,
+                          importance=TRUE)
+difftime(Sys.time(),ptime)
+save(mojing.rf,file="Output/mojing.res2.RData")
 
-length(vData.master[is.na(vData.master[,i]),i])
+#save(mojing.rf,file="Output/mojing.res1.RData")
+# 1.68554 hours
+#save(mojing.rf,file="Output/mojing.res.RData")
+
+class(vData.master.ex[,"target"])
+str(mojing.rf)
+
+
+mojing.pred <- predict(mojing.rf,vData.master.ex.test[,-198])
+
+auc.val <- auc(roc(vData.master.ex.test$target,mojing.pred))
+auc.text <- paste("AUC:",round(auc.val[1]*100,1))
+plot(roc(vData.master.ex.test$target,mojing.pred),col=10,main=auc.text)
+
 
 length(vData.master.ex[1,])
-head(vData.master.ex)
-str(vData.master.ex)
 
+length(mojing.pred)
+length(vData.master.ex$target)
 
-vLabel <- "target"
+summary(mojing.pred)
+length(mojing.pred[mojing.pred>0.5&!is.na(mojing.pred)])
 
-### UserInfo_1/UserInfo_2/UserInfo_3/UserInfo_4
-# "UserInfo_1" ----
-vAttr <- "UserInfo_1"
-woe(vData.master,"UserInfo_1",TRUE,"target",3,Bad=1,Good=0)
+### Model Evaluation ----
+## Training Set Auccuracy and Recall
+Acc.rf <- round((vConf.rf[1,1]+vConf.rf[2,2])/N,2)
+Rec.rf <- round(vConf.rf[2,2]/(sum(vConf.rf[2,1:2])),2)
+# AUC
+auc.val <- auc(roc(vData.master.ex$target,as.numeric(mojing.rf$predicted)))
+auc.text <- paste("AUC:",round(auc.val[1]*100,1))
+plot(roc(vData.master.ex$target,as.numeric(mojing.rf$predicted)),col=10,main=auc.text)
 
-woe.part(vData.master,vTag=vTag,vPart.name=vData.master[,""])
+## Test Set
+rm(vData.master,vData.logInfo,vData.UserInfoEx,vData.master.ex,
+   vTData.master,vTData.logInfo,vTData.UserInfoEx)
+load(file="Output/mojing.res.RData")
 
-vPart.tmp <- cbind(v=vData.master[,vAttr],part=0)
-head(vPart.tmp)
-i=1
-vPart.names <- as.numeric(names(table(vPart.tmp[,"v"])))
-vPart.tmp[vPart.tmp[,"v"]==vPart.names[i],"v"]
+mojing.pred <- predict(mojing.rf,vTData.master.ex)
+table(mojing.pred)
 
-table()
+### Result analysis ----
+load(file="Output/mojing.res.RData")
+importance.rf <- round(importance(mojing.rf), 2)
+col.key.0 <- importance.rf[,"0"]
+col.key.1 <- importance.rf[,"1"]
+max(col.key)*
+  
+col.key.0 <- col.key.0[sort(col.key.0,decreasing=TRUE)<=0]
+col.key.1 <- col.key.1[sort(col.key.1,decreasing=TRUE)<=0]
+col.noise <- intersect(names(col.key.0),names(col.key.1))
+save(col.noise,file="RData/col.noise.RData")
 
-N <- length(vData.master[,1])
-M <- length(vData.master[1,])
-vPart.tmp[is.na(vPart.tmp[,"v"]),]
+str(mojing.rf)
+vConf.rf <- mojing.rf$confusion
 
-
-
-
-
-vPart.tmp[vPart.tmp[,"v"]>=66.04,"part"] <- 2
-vPart.tmp[vPart.tmp[,"v"]<66.04,"part"] <- 1
-vPart <- vPart.tmp[,"part"]
-vPart <- as.factor(vPart)
-vData.ex <- cbind(vData,part=vPart)
-vPart.name <- levels(vPart)
-res <- woe.part(vData.ex,vTag,vPart.name)
-res
-sum(res$woe.res[,"IV"])
-
-woe(vData.master[,"target"])
-table(vData.master[,"UserInfo_1"])
-
-vData.master[,c("UserInfo_1","target")]
-
-head(vData.logInfo)
-head(vData.master)
-head(vData.UserInfoEx)
-names(vData.logInfo)
-names(vData.master)
-names(vData.UserInfoEx)
-
-ncol(vData.master)
-ncol(vData.logInfo)
-ncol(vData.UserInfoEx)
-
-sort(table(vData.master[,1])[1:30],decreasing=FALSE)[1:10]
-
-i <- 3
-table(vData.master[vData.master[,i]==-999,])
-
-vData.master[,]
-
-
-for(i in 211:230){
-  print(i)
-  print(names(table(vData.master[,i])[1:10]))
-}
-
-vData.master[,228]
-
-write.csv(vData.master,file="Output/test.csv",fileEncoding="UTF-8")
-enc2utf8(vData.master[,1])
-str(vData.master)
-
-
-table(vData.master[,"target"])
