@@ -29,3 +29,7 @@ for(i in col.factor){ # col.factor is the same as Training data
 }
 #save(vTData.master,vTData.UserInfoEx,vTData.logInfo,file="RData/vTData.origin.RData")
 load(file="RData/vTData.origin.RData")
+
+### Load 1 Final Test Data Data ----
+vTData.1Fianl <- read.csv(file="/Volumes/studio/Kesci-Mojing/PPD-Second-Round-Data(en)/first round test data/final_test.csv")
+str(vTData.1Fianl)

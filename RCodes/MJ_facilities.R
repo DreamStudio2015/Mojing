@@ -13,8 +13,8 @@
 library(randomForest)
 library(woe)
 library(pROC)
+library(plyr)
 # library(RMySQL)
-# library(plyr)
 # library(ROCR)
 # library(ineq)
 
